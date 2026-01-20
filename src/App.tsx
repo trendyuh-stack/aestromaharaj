@@ -19,6 +19,7 @@ import Panchang from "./pages/Panchang";
 import MatchMaking from "./pages/MatchMaking";
 import Numerology from "./pages/Numerology";
 import TarotReading from "./pages/TarotReading";
+import LoveLife from "./pages/LoveLife";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -46,6 +47,7 @@ const App = () => (
             <Route path="/match-making" element={<MatchMaking />} />
             <Route path="/numerology" element={<Numerology />} />
             <Route path="/tarot" element={<TarotReading />} />
+            <Route path="/love-compatibility" element={<LoveLife />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

@@ -343,9 +343,12 @@ const INTERNATIONAL_CITIES: Record<string, { lat: number; lon: number; tz: strin
 // Combine all cached cities
 const ALL_CITIES = { ...INDIAN_CITIES, ...INTERNATIONAL_CITIES };
 
+// Export list of cities for dropdowns
+export const CITIES_LIST = Object.keys(ALL_CITIES).sort();
+
 export async function geocodePlace(placeName: string, country?: string): Promise<GeocodingResult | null> {
   const normalizedPlace = placeName.toLowerCase().trim();
-  
+
   // Check cached cities first
   if (ALL_CITIES[normalizedPlace]) {
     const cached = ALL_CITIES[normalizedPlace];
@@ -356,7 +359,7 @@ export async function geocodePlace(placeName: string, country?: string): Promise
       timezone: cached.tz
     };
   }
-  
+
   // If not in cache, use Nominatim API
   try {
     const searchQuery = country ? `${placeName}, ${country}` : placeName;
@@ -368,22 +371,22 @@ export async function geocodePlace(placeName: string, country?: string): Promise
         }
       }
     );
-    
+
     if (!response.ok) {
       console.error('Geocoding API error:', response.status);
       return null;
     }
-    
+
     const data = await response.json();
-    
+
     if (data && data.length > 0) {
       const result = data[0];
       const lat = parseFloat(result.lat);
       const lon = parseFloat(result.lon);
-      
+
       // Estimate timezone based on longitude (approximate)
       const timezone = estimateTimezone(lat, lon, country);
-      
+
       return {
         latitude: lat,
         longitude: lon,
@@ -391,7 +394,7 @@ export async function geocodePlace(placeName: string, country?: string): Promise
         timezone
       };
     }
-    
+
     return null;
   } catch (error) {
     console.error('Geocoding error:', error);
@@ -404,10 +407,10 @@ function estimateTimezone(lat: number, lon: number, country?: string): string {
   if (country?.toLowerCase() === 'india' || (lat >= 8 && lat <= 37 && lon >= 68 && lon <= 97)) {
     return 'Asia/Kolkata';
   }
-  
+
   // Simple timezone estimation based on longitude
   const offset = Math.round(lon / 15);
-  
+
   // Common timezone mappings by offset
   const timezoneMap: Record<number, string> = {
     [-12]: 'Etc/GMT+12',
@@ -436,6 +439,6 @@ function estimateTimezone(lat: number, lon: number, country?: string): string {
     [11]: 'Pacific/Noumea',
     [12]: 'Pacific/Auckland',
   };
-  
+
   return timezoneMap[offset] || 'UTC';
 }

@@ -73,14 +73,14 @@ function dateToJulianDay(year: number, month: number, day: number, hour: number 
     year -= 1;
     month += 12;
   }
-  
+
   const A = Math.floor(year / 100);
   const B = 2 - A + Math.floor(A / 4);
-  
+
   const JD = Math.floor(365.25 * (year + 4716)) +
-             Math.floor(30.6001 * (month + 1)) +
-             day + B - 1524.5 + hour / 24;
-  
+    Math.floor(30.6001 * (month + 1)) +
+    day + B - 1524.5 + hour / 24;
+
   return JD;
 }
 
@@ -168,11 +168,11 @@ const ORBITAL_ELEMENTS: Record<string, OrbitalElements> = {
 function calculatePlanetPosition(planet: string, jd: number): { longitude: number; latitude: number; distance: number } {
   const T = julianCenturies(jd);
   const elements = ORBITAL_ELEMENTS[planet];
-  
+
   if (!elements) {
     throw new Error(`Unknown planet: ${planet}`);
   }
-  
+
   // Calculate orbital elements at time T
   const L = (elements.L0 + elements.L1 * T) % 360;
   const e = elements.e0 + elements.e1 * T;
@@ -180,32 +180,32 @@ function calculatePlanetPosition(planet: string, jd: number): { longitude: numbe
   const omega = elements.omega0 + elements.omega1 * T;
   const w = elements.w0 + elements.w1 * T;
   const a = elements.a;
-  
+
   // Mean anomaly
   const M = (L - w) % 360;
   const M_rad = M * DEG_TO_RAD;
-  
+
   // Solve Kepler's equation for eccentric anomaly (iterative)
   let E = M_rad;
   for (let i = 0; i < 10; i++) {
     E = M_rad + e * Math.sin(E);
   }
-  
+
   // True anomaly
   const v = 2 * Math.atan(Math.sqrt((1 + e) / (1 - e)) * Math.tan(E / 2)) * RAD_TO_DEG;
-  
+
   // Heliocentric longitude
   let helioLong = (v + w) % 360;
   if (helioLong < 0) helioLong += 360;
-  
+
   // For Earth, we need to convert to geocentric (as seen from Earth)
   if (planet === 'Earth') {
     return { longitude: helioLong, latitude: 0, distance: a };
   }
-  
+
   // Distance from Sun
   const r = a * (1 - e * Math.cos(E));
-  
+
   return { longitude: helioLong, latitude: I * Math.sin((helioLong - omega) * DEG_TO_RAD), distance: r };
 }
 
@@ -213,109 +213,109 @@ function helioToGeo(helioLong: number, helioDist: number, earthLong: number, ear
   // Convert heliocentric to geocentric longitude
   const helioX = helioDist * Math.cos(helioLong * DEG_TO_RAD);
   const helioY = helioDist * Math.sin(helioLong * DEG_TO_RAD);
-  
+
   const earthX = earthDist * Math.cos(earthLong * DEG_TO_RAD);
   const earthY = earthDist * Math.sin(earthLong * DEG_TO_RAD);
-  
+
   const geoX = helioX - earthX;
   const geoY = helioY - earthY;
-  
+
   let geoLong = Math.atan2(geoY, geoX) * RAD_TO_DEG;
   if (geoLong < 0) geoLong += 360;
-  
+
   return geoLong;
 }
 
 // Sun position (as seen from Earth) - simplified algorithm
 function calculateSunPosition(jd: number): number {
   const T = julianCenturies(jd);
-  
+
   // Mean longitude of the Sun
   let L0 = 280.46646 + 36000.76983 * T + 0.0003032 * T * T;
   L0 = L0 % 360;
   if (L0 < 0) L0 += 360;
-  
+
   // Mean anomaly of the Sun
   let M = 357.52911 + 35999.05029 * T - 0.0001537 * T * T;
   M = M % 360;
   const M_rad = M * DEG_TO_RAD;
-  
+
   // Equation of center
   const C = (1.914602 - 0.004817 * T - 0.000014 * T * T) * Math.sin(M_rad)
-          + (0.019993 - 0.000101 * T) * Math.sin(2 * M_rad)
-          + 0.000289 * Math.sin(3 * M_rad);
-  
+    + (0.019993 - 0.000101 * T) * Math.sin(2 * M_rad)
+    + 0.000289 * Math.sin(3 * M_rad);
+
   // True longitude
   let sunLong = L0 + C;
   sunLong = sunLong % 360;
   if (sunLong < 0) sunLong += 360;
-  
+
   return sunLong;
 }
 
 // Moon position - simplified algorithm based on Meeus
 function calculateMoonPosition(jd: number): { longitude: number; latitude: number } {
   const T = julianCenturies(jd);
-  
+
   // Mean longitude of Moon
   let Lp = 218.3164477 + 481267.88123421 * T - 0.0015786 * T * T + T * T * T / 538841 - T * T * T * T / 65194000;
   Lp = Lp % 360;
   if (Lp < 0) Lp += 360;
-  
+
   // Mean elongation of Moon
   let D = 297.8501921 + 445267.1114034 * T - 0.0018819 * T * T + T * T * T / 545868 - T * T * T * T / 113065000;
   D = D % 360;
-  
+
   // Mean anomaly of Sun
   let M = 357.5291092 + 35999.0502909 * T - 0.0001536 * T * T + T * T * T / 24490000;
   M = M % 360;
-  
+
   // Mean anomaly of Moon
   let Mp = 134.9633964 + 477198.8675055 * T + 0.0087414 * T * T + T * T * T / 69699 - T * T * T * T / 14712000;
   Mp = Mp % 360;
-  
+
   // Argument of latitude
   let F = 93.2720950 + 483202.0175233 * T - 0.0036539 * T * T - T * T * T / 3526000 + T * T * T * T / 863310000;
   F = F % 360;
-  
+
   // Convert to radians
   const D_rad = D * DEG_TO_RAD;
   const M_rad = M * DEG_TO_RAD;
   const Mp_rad = Mp * DEG_TO_RAD;
   const F_rad = F * DEG_TO_RAD;
-  
+
   // Longitude corrections (main terms)
   let dL = 6288774 * Math.sin(Mp_rad)
-         + 1274027 * Math.sin(2 * D_rad - Mp_rad)
-         + 658314 * Math.sin(2 * D_rad)
-         + 213618 * Math.sin(2 * Mp_rad)
-         - 185116 * Math.sin(M_rad)
-         - 114332 * Math.sin(2 * F_rad);
-  
+    + 1274027 * Math.sin(2 * D_rad - Mp_rad)
+    + 658314 * Math.sin(2 * D_rad)
+    + 213618 * Math.sin(2 * Mp_rad)
+    - 185116 * Math.sin(M_rad)
+    - 114332 * Math.sin(2 * F_rad);
+
   // Latitude corrections (main terms)
   let dB = 5128122 * Math.sin(F_rad)
-         + 280602 * Math.sin(Mp_rad + F_rad)
-         + 277693 * Math.sin(Mp_rad - F_rad);
-  
+    + 280602 * Math.sin(Mp_rad + F_rad)
+    + 277693 * Math.sin(Mp_rad - F_rad);
+
   // Final longitude and latitude
   let moonLong = Lp + dL / 1000000;
   moonLong = moonLong % 360;
   if (moonLong < 0) moonLong += 360;
-  
+
   let moonLat = dB / 1000000;
-  
+
   return { longitude: moonLong, latitude: moonLat };
 }
 
 // Rahu (Mean North Node) calculation
 function calculateRahuPosition(jd: number): number {
   const T = julianCenturies(jd);
-  
+
   // Mean longitude of ascending node (Rahu)
   let omega = 125.04452 - 1934.136261 * T + 0.0020708 * T * T + T * T * T / 450000;
   omega = omega % 360;
   if (omega < 0) omega += 360;
-  
+
   return omega;
 }
 
@@ -324,30 +324,30 @@ function calculateRahuPosition(jd: number): number {
 function calculateLagna(jd: number, latitude: number, longitude: number): number {
   // Calculate Local Sidereal Time
   const T = julianCenturies(jd);
-  
+
   // Greenwich Mean Sidereal Time at 0h UT
   let GMST = 280.46061837 + 360.98564736629 * (jd - J2000) + 0.000387933 * T * T - T * T * T / 38710000;
   GMST = GMST % 360;
   if (GMST < 0) GMST += 360;
-  
+
   // Local Sidereal Time
   let LST = GMST + longitude;
   LST = LST % 360;
   if (LST < 0) LST += 360;
-  
+
   // Calculate Ascendant (Lagna)
   const eps = 23.4393 - 0.013 * T; // Obliquity of ecliptic
   const lat_rad = latitude * DEG_TO_RAD;
   const eps_rad = eps * DEG_TO_RAD;
   const LST_rad = LST * DEG_TO_RAD;
-  
+
   // Ascendant formula
   let y = Math.cos(LST_rad);
   let x = -Math.sin(LST_rad) * Math.cos(eps_rad) - Math.tan(lat_rad) * Math.sin(eps_rad);
-  
+
   let asc = Math.atan2(y, x) * RAD_TO_DEG;
   if (asc < 0) asc += 360;
-  
+
   return asc;
 }
 
@@ -355,11 +355,11 @@ function calculateHouses(lagna: number): number[] {
   // Whole sign house system (traditional Vedic)
   const houses: number[] = [];
   const lagnaSign = Math.floor(lagna / 30);
-  
+
   for (let i = 0; i < 12; i++) {
     houses.push(((lagnaSign + i) % 12) * 30);
   }
-  
+
   return houses;
 }
 
@@ -381,14 +381,14 @@ function calculateTithi(sunLong: number, moonLong: number): { name: string; inde
     'Shashthi', 'Saptami', 'Ashtami', 'Navami', 'Dashami',
     'Ekadashi', 'Dwadashi', 'Trayodashi', 'Chaturdashi', 'Purnima/Amavasya'
   ];
-  
+
   let diff = moonLong - sunLong;
   if (diff < 0) diff += 360;
-  
+
   const tithiIndex = Math.floor(diff / 12);
   const tithiName = TITHIS[tithiIndex % 15];
   const paksha = tithiIndex < 15 ? 'Shukla' : 'Krishna';
-  
+
   return { name: `${paksha} ${tithiName}`, index: tithiIndex };
 }
 
@@ -401,12 +401,12 @@ function calculateYoga(sunLong: number, moonLong: number): { name: string; index
     'Siddha', 'Sadhya', 'Shubha', 'Shukla', 'Brahma',
     'Indra', 'Vaidhriti'
   ];
-  
+
   let sum = sunLong + moonLong;
   sum = sum % 360;
-  
+
   const yogaIndex = Math.floor(sum / (360 / 27));
-  
+
   return { name: YOGAS[yogaIndex], index: yogaIndex };
 }
 
@@ -415,50 +415,50 @@ function calculateKarana(sunLong: number, moonLong: number): { name: string; ind
     'Bava', 'Balava', 'Kaulava', 'Taitila', 'Gara', 'Vanija', 'Vishti',
     'Shakuni', 'Chatushpada', 'Naga', 'Kimstughna'
   ];
-  
+
   let diff = moonLong - sunLong;
   if (diff < 0) diff += 360;
-  
+
   const karanaIndex = Math.floor(diff / 6) % 60;
   const karanaName = karanaIndex < 57 ? KARANAS[karanaIndex % 7] : KARANAS[7 + (karanaIndex - 57)];
-  
+
   return { name: karanaName, index: karanaIndex };
 }
 
 function calculateSunriseSunset(jd: number, latitude: number, longitude: number): { sunrise: string; sunset: string } {
   // Approximate sunrise/sunset calculation
   const T = julianCenturies(jd);
-  
+
   // Solar declination
   const sunLong = calculateSunPosition(jd);
   const eps = 23.4393 - 0.013 * T;
   const delta = Math.asin(Math.sin(eps * DEG_TO_RAD) * Math.sin(sunLong * DEG_TO_RAD)) * RAD_TO_DEG;
-  
+
   // Hour angle at sunrise/sunset
   const lat_rad = latitude * DEG_TO_RAD;
   const delta_rad = delta * DEG_TO_RAD;
-  
+
   const cosH = (Math.sin(-0.833 * DEG_TO_RAD) - Math.sin(lat_rad) * Math.sin(delta_rad)) /
-               (Math.cos(lat_rad) * Math.cos(delta_rad));
-  
+    (Math.cos(lat_rad) * Math.cos(delta_rad));
+
   if (cosH > 1) return { sunrise: 'No sunrise', sunset: 'No sunset' }; // Polar night
   if (cosH < -1) return { sunrise: 'No sunrise', sunset: 'No sunset' }; // Midnight sun
-  
+
   const H = Math.acos(cosH) * RAD_TO_DEG;
-  
+
   // Solar noon
   const noonOffset = -longitude / 15; // Hours from UTC
-  
+
   // Sunrise and sunset times (approximate)
   const sunriseHour = 12 - H / 15 + noonOffset;
   const sunsetHour = 12 + H / 15 + noonOffset;
-  
+
   const formatTime = (hour: number) => {
     const h = Math.floor(hour);
     const m = Math.floor((hour - h) * 60);
     return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
   };
-  
+
   return { sunrise: formatTime(sunriseHour), sunset: formatTime(sunsetHour) };
 }
 
@@ -476,59 +476,59 @@ function calculateVimshottariDasha(moonLong: number, birthDate: Date): DashaData
   const nakshatraIndex = Math.floor(moonLong / (360 / 27));
   const nakshatra = NAKSHATRAS[nakshatraIndex];
   const nakshatraLord = nakshatra.lord;
-  
+
   // Calculate remaining portion of nakshatra at birth
   const nakshatraStart = nakshatraIndex * (360 / 27);
   const degreeInNakshatra = moonLong - nakshatraStart;
   const fractionCompleted = degreeInNakshatra / (360 / 27);
   const fractionRemaining = 1 - fractionCompleted;
-  
+
   // Find starting dasha
   const lordIndex = DASHA_SEQUENCE.indexOf(nakshatraLord);
   const firstDashaYears = DASHA_PERIODS[nakshatraLord] * fractionRemaining;
-  
+
   // Calculate all 9 Mahadashas
   const dashas: DashaData[] = [];
   let currentDate = new Date(birthDate);
-  
+
   for (let i = 0; i < 9; i++) {
     const dashaLord = DASHA_SEQUENCE[(lordIndex + i) % 9];
     const dashaPeriod = i === 0 ? firstDashaYears : DASHA_PERIODS[dashaLord];
-    
+
     const startDate = new Date(currentDate);
     const endDate = new Date(currentDate);
     endDate.setDate(endDate.getDate() + Math.floor(dashaPeriod * 365.25));
-    
+
     // Calculate Antardashas (sub-periods)
     const antardashas: { name: string; start: string; end: string }[] = [];
     let antardashStart = new Date(startDate);
-    
+
     for (let j = 0; j < 9; j++) {
       const antardashLord = DASHA_SEQUENCE[(lordIndex + i + j) % 9];
       const antardashPeriod = (dashaPeriod * DASHA_PERIODS[antardashLord]) / 120;
-      
+
       const antardashEnd = new Date(antardashStart);
       antardashEnd.setDate(antardashEnd.getDate() + Math.floor(antardashPeriod * 365.25));
-      
+
       antardashas.push({
         name: antardashLord,
         start: antardashStart.toISOString().split('T')[0],
         end: antardashEnd.toISOString().split('T')[0]
       });
-      
+
       antardashStart = new Date(antardashEnd);
     }
-    
+
     dashas.push({
       mahadasha: dashaLord,
       mahadashaStart: startDate.toISOString().split('T')[0],
       mahadashaEnd: endDate.toISOString().split('T')[0],
       antardashas
     });
-    
+
     currentDate = new Date(endDate);
   }
-  
+
   return dashas;
 }
 
@@ -544,14 +544,14 @@ function calculateNavamsa(tropicalLong: number): { sign: number; degree: number 
   const signDegree = tropicalLong % 30;
   const navamsaNumber = Math.floor(signDegree / 3.333333);
   const signNumber = Math.floor(tropicalLong / 30);
-  
+
   // Calculate navamsa sign based on element
   const element = signNumber % 4; // 0=Fire, 1=Earth, 2=Air, 3=Water
   const startSign = element * 3; // Fire signs start from Aries, Earth from Capricorn, etc.
-  
+
   const navamsaSign = (startSign + navamsaNumber) % 12;
   const navamsaDegree = (signDegree % 3.333333) * 9;
-  
+
   return { sign: navamsaSign, degree: navamsaDegree };
 }
 
@@ -619,25 +619,98 @@ function calculateKundali(input: KundaliInput): KundaliResult {
   // Parse date and time
   const [year, month, day] = input.dateOfBirth.split('-').map(Number);
   const [hour, minute] = input.timeOfBirth.split(':').map(Number);
-  const decimalHour = hour + minute / 60;
-  
-  // Calculate Julian Day
-  const jd = dateToJulianDay(year, month, day, decimalHour);
-  
+
+  // Helpers to handle timezone offsets
+  // We need to convert Local Time to UTC for astronomical calculations (Julian Day)
+  // Since we don't have a full TZDB here, we'll try to use the IANA timezone string if possible,
+  // or fall back to a simple logic if we can parse the offset.
+
+  // Create a date object with the local time
+  // Note: Date.UTC() creates a generic UTC timestamp, we then adjust by the timezone offset
+  // But Deno/Browser Intl API is better for this.
+
+  // Let's rely on a robust way: Construct string with offset if we can, or use specific libraries.
+  // Standard simple approach: Treat input as "Base Time".
+  // If input timezone is "Asia/Kolkata", parse it as such.
+
+  // We'll use a hacky but effective way for Deno:
+  // Create a formatter for the given timezone, get the offset, and apply it.
+
+  // Better yet: Just assume the input time needs to be converted to UTC.
+  // J = 367Y - INT(7(Y + INT((M+9)/12))/4) + INT(275M/9) + D + 1721013.5 + UT/24
+
+  // We need to get the UTC Hour from Local Hour.
+  // We will use the 'date-fns-tz' equivalent logic or native Intl.
+
+  // 1. Create a date string representing the local time: "YYYY-MM-DDTHH:mm:00"
+  const localDateTimeStr = `${input.dateOfBirth}T${input.timeOfBirth}:00`;
+
+  // 2. We need the offset for this timezone at this date.
+  // Using Intl to get the offset part or just the UTC parts.
+  const getParts = (tz: string) => {
+    try {
+      const d = new Date(localDateTimeStr);
+      // This 'd' is created in system local time (e.g. server time), which is WRONG.
+      // We must treat the numbers as abstract.
+
+      // Correct approach using Intl.DateTimeFormat to find parsed parts in UTC
+      // But simpler:
+      // We just want to subtract the offset.
+
+      // Hardcoded offsets for common zones to ensure reliability in this limited environment
+      const timezones: Record<string, number> = {
+        'Asia/Kolkata': 5.5,
+        'IST': 5.5,
+        'Asia/Dubai': 4,
+        'Asia/Bangkok': 7,
+        'Asia/Singapore': 8,
+        'Asia/Tokyo': 9,
+        'Australia/Sydney': 10, // approximate (no DST)
+        'Europe/London': 0,
+        'UTC': 0,
+        'America/New_York': -5,
+        'America/Los_Angeles': -8,
+      };
+
+      // Try to use provided timezone offset if we had it, but we only have ID.
+      // Fallback to 0 if unknown for safety, or try to parse typical offsets.
+      return timezones[input.timezone] ?? 5.5; // Default to IST if unknown for now as it's an Indian app
+    } catch (e) {
+      return 5.5;
+    }
+  };
+
+  const tzOffsetHours = getParts(input.timezone);
+
+  // Convert Local Hour to UTC Hour
+  const decimalLocalHour = hour + minute / 60;
+  const decimalUtcHour = decimalLocalHour - tzOffsetHours;
+
+  // Handle day rollover (simplified)
+  // Ideally we re-calculate day/month/year if hour goes < 0 or > 24
+  // But standard JD algorithm usually handles decimal hours outside 0-24?
+  // Let's trust dateToJulianDay can handle negative hours or >24?
+  // The current dateToJulianDay implementation:
+  // JD = ... + hour / 24;
+  // Yes, standard math handles fractional day correctly even if negative.
+
+  // Calculate Julian Day using UTC time
+  const jd = dateToJulianDay(year, month, day, decimalUtcHour);
+
   // Calculate Ayanamsa
   const ayanamsa = calculateLahiriAyanamsa(jd);
-  
+
   // Calculate Lagna (Ascendant)
   const tropicalLagna = calculateLagna(jd, input.latitude, input.longitude);
   let siderealLagna = tropicalLagna - ayanamsa;
   if (siderealLagna < 0) siderealLagna += 360;
-  
+
   const lagnaSign = Math.floor(siderealLagna / 30);
   const lagnaDegree = siderealLagna % 30;
   const lagnaNakshatraIndex = Math.floor(siderealLagna / (360 / 27));
   const lagnaNakshatra = NAKSHATRAS[lagnaNakshatraIndex];
   const lagnaPada = Math.floor((siderealLagna % (360 / 27)) / (360 / 27 / 4)) + 1;
-  
+
   // Calculate houses (whole sign system)
   const houses = calculateHouses(siderealLagna);
   const houseData = houses.map((h, i) => ({
@@ -646,44 +719,44 @@ function calculateKundali(input: KundaliInput): KundaliResult {
     signHindi: ZODIAC_SIGNS_HINDI[Math.floor(h / 30)],
     degree: h % 30
   }));
-  
+
   // Calculate Earth position for heliocentric to geocentric conversion
   const earthPos = calculatePlanetPosition('Earth', jd);
-  
+
   // Calculate Sun position
   const sunTropical = calculateSunPosition(jd);
   let sunSidereal = sunTropical - ayanamsa;
   if (sunSidereal < 0) sunSidereal += 360;
-  
+
   // Calculate Moon position
   const moonPos = calculateMoonPosition(jd);
   let moonSidereal = moonPos.longitude - ayanamsa;
   if (moonSidereal < 0) moonSidereal += 360;
-  
+
   // Calculate Rahu position
   const rahuTropical = calculateRahuPosition(jd);
   let rahuSidereal = rahuTropical - ayanamsa;
   if (rahuSidereal < 0) rahuSidereal += 360;
-  
+
   // Ketu is always 180° opposite to Rahu
   let ketuSidereal = (rahuSidereal + 180) % 360;
-  
+
   // Calculate other planets
   const planetNames = ['Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn'];
   const planetHindiNames: Record<string, string> = {
     'Sun': 'सूर्य', 'Moon': 'चंद्र', 'Mercury': 'बुध', 'Venus': 'शुक्र',
     'Mars': 'मंगल', 'Jupiter': 'गुरु', 'Saturn': 'शनि', 'Rahu': 'राहु', 'Ketu': 'केतु'
   };
-  
+
   const planets: PlanetPosition[] = [];
-  
+
   // Helper function to get house from longitude
   const getHouse = (siderealLong: number): number => {
     const planetSign = Math.floor(siderealLong / 30);
     const lagnaSignNum = Math.floor(siderealLagna / 30);
     return ((planetSign - lagnaSignNum + 12) % 12) + 1;
   };
-  
+
   // Helper to calculate nakshatra info
   const getNakshatraInfo = (siderealLong: number) => {
     const index = Math.floor(siderealLong / (360 / 27));
@@ -691,7 +764,7 @@ function calculateKundali(input: KundaliInput): KundaliResult {
     const pada = Math.floor((siderealLong % (360 / 27)) / (360 / 27 / 4)) + 1;
     return { nakshatra: nakshatra.name, pada };
   };
-  
+
   // Sun
   const sunNakshatra = getNakshatraInfo(sunSidereal);
   planets.push({
@@ -707,7 +780,7 @@ function calculateKundali(input: KundaliInput): KundaliResult {
     nakshatra: sunNakshatra.nakshatra,
     nakshatraPada: sunNakshatra.pada
   });
-  
+
   // Moon
   const moonNakshatra = getNakshatraInfo(moonSidereal);
   planets.push({
@@ -723,20 +796,20 @@ function calculateKundali(input: KundaliInput): KundaliResult {
     nakshatra: moonNakshatra.nakshatra,
     nakshatraPada: moonNakshatra.pada
   });
-  
+
   // Other planets
   for (const planetName of planetNames) {
     const pos = calculatePlanetPosition(planetName, jd);
     const geoLong = helioToGeo(pos.longitude, pos.distance, earthPos.longitude, earthPos.distance);
     let sidereal = geoLong - ayanamsa;
     if (sidereal < 0) sidereal += 360;
-    
+
     // Simple retrograde detection (comparing with position 1 day earlier)
     const prevJd = jd - 1;
     const prevPos = calculatePlanetPosition(planetName, prevJd);
     const prevEarthPos = calculatePlanetPosition('Earth', prevJd);
     const prevGeoLong = helioToGeo(prevPos.longitude, prevPos.distance, prevEarthPos.longitude, prevEarthPos.distance);
-    
+
     let isRetrograde = false;
     const movement = geoLong - prevGeoLong;
     if (movement < -300) { // Handle 360° wrap
@@ -746,9 +819,9 @@ function calculateKundali(input: KundaliInput): KundaliResult {
     } else if (movement < 0) {
       isRetrograde = true;
     }
-    
+
     const nakshatraInfo = getNakshatraInfo(sidereal);
-    
+
     planets.push({
       planet: planetName,
       planetHindi: planetHindiNames[planetName],
@@ -763,7 +836,7 @@ function calculateKundali(input: KundaliInput): KundaliResult {
       nakshatraPada: nakshatraInfo.pada
     });
   }
-  
+
   // Rahu
   const rahuNakshatra = getNakshatraInfo(rahuSidereal);
   planets.push({
@@ -779,7 +852,7 @@ function calculateKundali(input: KundaliInput): KundaliResult {
     nakshatra: rahuNakshatra.nakshatra,
     nakshatraPada: rahuNakshatra.pada
   });
-  
+
   // Ketu
   const ketuNakshatra = getNakshatraInfo(ketuSidereal);
   planets.push({
@@ -795,20 +868,20 @@ function calculateKundali(input: KundaliInput): KundaliResult {
     nakshatra: ketuNakshatra.nakshatra,
     nakshatraPada: ketuNakshatra.pada
   });
-  
+
   // Calculate Panchang
   const tithi = calculateTithi(sunSidereal, moonSidereal);
   const yoga = calculateYoga(sunSidereal, moonSidereal);
   const karana = calculateKarana(sunSidereal, moonSidereal);
   const { sunrise, sunset } = calculateSunriseSunset(jd, input.latitude, input.longitude);
-  
+
   const moonPhaseAngle = moonSidereal - sunSidereal;
   let moonPhase = 'Waxing';
   if (moonPhaseAngle < 0 || moonPhaseAngle > 180) moonPhase = 'Waning';
-  
+
   const moonNakshatraData = NAKSHATRAS[Math.floor(moonSidereal / (360 / 27))];
   const moonPada = Math.floor((moonSidereal % (360 / 27)) / (360 / 27 / 4)) + 1;
-  
+
   const panchang: PanchangData = {
     tithi: { ...tithi, endTime: 'Calculated dynamically' },
     nakshatra: {
@@ -823,23 +896,23 @@ function calculateKundali(input: KundaliInput): KundaliResult {
     sunset,
     moonPhase
   };
-  
+
   // Calculate Dashas
   const birthDate = new Date(year, month - 1, day, hour, minute);
   const dashas = calculateVimshottariDasha(moonSidereal, birthDate);
-  
+
   // Calculate Divisional Charts
   const d1Planets = planets.map(p => ({
     planet: p.planet,
     sign: Math.floor(p.siderealLongitude / 30),
     degree: p.siderealLongitude % 30
   }));
-  
+
   const d9Planets = planets.map(p => {
     const navamsa = calculateNavamsa(p.siderealLongitude);
     return { planet: p.planet, sign: navamsa.sign, degree: navamsa.degree };
   });
-  
+
   return {
     input,
     ayanamsa,
@@ -883,9 +956,9 @@ function calculateCurrentTransits() {
   const now = new Date();
   const jd = dateToJulianDay(now.getFullYear(), now.getMonth() + 1, now.getDate(), now.getHours() + now.getMinutes() / 60);
   const ayanamsa = calculateLahiriAyanamsa(jd);
-  
+
   const transits: { planet: string; sign: string; degree: number; isRetrograde: boolean }[] = [];
-  
+
   // Sun
   const sunTropical = calculateSunPosition(jd);
   let sunSidereal = sunTropical - ayanamsa;
@@ -896,7 +969,7 @@ function calculateCurrentTransits() {
     degree: sunSidereal % 30,
     isRetrograde: false
   });
-  
+
   // Moon
   const moonPos = calculateMoonPosition(jd);
   let moonSidereal = moonPos.longitude - ayanamsa;
@@ -907,7 +980,7 @@ function calculateCurrentTransits() {
     degree: moonSidereal % 30,
     isRetrograde: false
   });
-  
+
   // Other planets
   const earthPos = calculatePlanetPosition('Earth', jd);
   for (const planetName of ['Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn']) {
@@ -915,19 +988,19 @@ function calculateCurrentTransits() {
     const geoLong = helioToGeo(pos.longitude, pos.distance, earthPos.longitude, earthPos.distance);
     let sidereal = geoLong - ayanamsa;
     if (sidereal < 0) sidereal += 360;
-    
+
     // Retrograde check
     const prevJd = jd - 1;
     const prevPos = calculatePlanetPosition(planetName, prevJd);
     const prevEarthPos = calculatePlanetPosition('Earth', prevJd);
     const prevGeoLong = helioToGeo(prevPos.longitude, prevPos.distance, prevEarthPos.longitude, prevEarthPos.distance);
-    
+
     let isRetrograde = false;
     const movement = geoLong - prevGeoLong;
     if (movement < -300) isRetrograde = false;
     else if (movement > 300) isRetrograde = true;
     else if (movement < 0) isRetrograde = true;
-    
+
     transits.push({
       planet: planetName,
       sign: ZODIAC_SIGNS[Math.floor(sidereal / 30)],
@@ -935,7 +1008,7 @@ function calculateCurrentTransits() {
       isRetrograde
     });
   }
-  
+
   // Rahu/Ketu
   const rahuTropical = calculateRahuPosition(jd);
   let rahuSidereal = rahuTropical - ayanamsa;
@@ -946,7 +1019,7 @@ function calculateCurrentTransits() {
     degree: rahuSidereal % 30,
     isRetrograde: true
   });
-  
+
   const ketuSidereal = (rahuSidereal + 180) % 360;
   transits.push({
     planet: 'Ketu',
@@ -954,7 +1027,7 @@ function calculateCurrentTransits() {
     degree: ketuSidereal % 30,
     isRetrograde: true
   });
-  
+
   return transits;
 }
 
@@ -965,11 +1038,11 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
-  
+
   try {
     const url = new URL(req.url);
     const path = url.pathname.split('/').pop();
-    
+
     // Route: /kundali - Full birth chart calculation
     if (path === 'kundali' || path === 'calculate-kundali') {
       if (req.method !== 'POST') {
@@ -978,10 +1051,10 @@ serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
-      
+
       const body = await req.json();
       const { dateOfBirth, timeOfBirth, latitude, longitude, timezone } = body;
-      
+
       // Validate inputs
       if (!dateOfBirth || !timeOfBirth || latitude === undefined || longitude === undefined) {
         return new Response(JSON.stringify({
@@ -992,7 +1065,7 @@ serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
-      
+
       // Validate date format
       const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
       if (!dateRegex.test(dateOfBirth)) {
@@ -1001,7 +1074,7 @@ serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
-      
+
       // Validate time format
       const timeRegex = /^\d{2}:\d{2}$/;
       if (!timeRegex.test(timeOfBirth)) {
@@ -1010,7 +1083,7 @@ serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
-      
+
       // Validate coordinates
       if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
         return new Response(JSON.stringify({ error: 'Invalid coordinates. Latitude: -90 to 90, Longitude: -180 to 180' }), {
@@ -1018,9 +1091,9 @@ serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
-      
+
       console.log('Calculating kundali for:', { dateOfBirth, timeOfBirth, latitude, longitude, timezone });
-      
+
       const result = calculateKundali({
         dateOfBirth,
         timeOfBirth,
@@ -1028,12 +1101,12 @@ serve(async (req) => {
         longitude: Number(longitude),
         timezone: timezone || 'UTC'
       });
-      
+
       return new Response(JSON.stringify(result), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
-    
+
     // Route: /panchang - Daily panchang
     if (path === 'panchang') {
       if (req.method !== 'POST') {
@@ -1042,10 +1115,10 @@ serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
-      
+
       const body = await req.json();
       const { date, latitude, longitude } = body;
-      
+
       if (!date || latitude === undefined || longitude === undefined) {
         return new Response(JSON.stringify({
           error: 'Missing required fields',
@@ -1055,28 +1128,28 @@ serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
-      
+
       const [year, month, day] = date.split('-').map(Number);
       const jd = dateToJulianDay(year, month, day, 12); // Noon
       const ayanamsa = calculateLahiriAyanamsa(jd);
-      
+
       const sunTropical = calculateSunPosition(jd);
       let sunSidereal = sunTropical - ayanamsa;
       if (sunSidereal < 0) sunSidereal += 360;
-      
+
       const moonPos = calculateMoonPosition(jd);
       let moonSidereal = moonPos.longitude - ayanamsa;
       if (moonSidereal < 0) moonSidereal += 360;
-      
+
       const tithi = calculateTithi(sunSidereal, moonSidereal);
       const yoga = calculateYoga(sunSidereal, moonSidereal);
       const karana = calculateKarana(sunSidereal, moonSidereal);
       const { sunrise, sunset } = calculateSunriseSunset(jd, Number(latitude), Number(longitude));
-      
+
       const moonNakshatraIndex = Math.floor(moonSidereal / (360 / 27));
       const moonNakshatra = NAKSHATRAS[moonNakshatraIndex];
       const moonPada = Math.floor((moonSidereal % (360 / 27)) / (360 / 27 / 4)) + 1;
-      
+
       return new Response(JSON.stringify({
         date,
         tithi,
@@ -1092,11 +1165,11 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
-    
+
     // Route: /transits - Current planetary transits
     if (path === 'transits') {
       const transits = calculateCurrentTransits();
-      
+
       return new Response(JSON.stringify({
         calculatedAt: new Date().toISOString(),
         transits
@@ -1104,7 +1177,7 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
-    
+
     // Route: /dasha - Calculate dasha for a birth chart
     if (path === 'dasha') {
       if (req.method !== 'POST') {
@@ -1113,10 +1186,10 @@ serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
-      
+
       const body = await req.json();
       const { dateOfBirth, timeOfBirth, latitude, longitude } = body;
-      
+
       if (!dateOfBirth || !timeOfBirth || latitude === undefined || longitude === undefined) {
         return new Response(JSON.stringify({
           error: 'Missing required fields',
@@ -1126,31 +1199,31 @@ serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
-      
+
       const [year, month, day] = dateOfBirth.split('-').map(Number);
       const [hour, minute] = timeOfBirth.split(':').map(Number);
       const jd = dateToJulianDay(year, month, day, hour + minute / 60);
       const ayanamsa = calculateLahiriAyanamsa(jd);
-      
+
       const moonPos = calculateMoonPosition(jd);
       let moonSidereal = moonPos.longitude - ayanamsa;
       if (moonSidereal < 0) moonSidereal += 360;
-      
+
       const birthDate = new Date(year, month - 1, day, hour, minute);
       const dashas = calculateVimshottariDasha(moonSidereal, birthDate);
-      
+
       // Find current dasha
       const now = new Date();
       let currentMahadasha = '';
       let currentAntardasha = '';
-      
+
       for (const dasha of dashas) {
         const startDate = new Date(dasha.mahadashaStart);
         const endDate = new Date(dasha.mahadashaEnd);
-        
+
         if (now >= startDate && now <= endDate) {
           currentMahadasha = dasha.mahadasha;
-          
+
           for (const antardasha of dasha.antardashas) {
             const antStart = new Date(antardasha.start);
             const antEnd = new Date(antardasha.end);
@@ -1162,7 +1235,7 @@ serve(async (req) => {
           break;
         }
       }
-      
+
       return new Response(JSON.stringify({
         currentMahadasha,
         currentAntardasha,
@@ -1171,7 +1244,7 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
-    
+
     // Default: Return API info
     return new Response(JSON.stringify({
       name: 'Vedic Astrology API',
@@ -1186,7 +1259,7 @@ serve(async (req) => {
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
-    
+
   } catch (error: unknown) {
     console.error('Error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';

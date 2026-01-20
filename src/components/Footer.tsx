@@ -25,16 +25,26 @@ export const Footer = () => {
           <div>
             <h4 className="font-serif text-lg font-semibold mb-4 text-foreground">Quick Links</h4>
             <ul className="space-y-2">
-              {['Home', 'Generate Kundali', 'Our Astrologers', 'Book Consultation'].map((link) => (
-                <li key={link}>
-                  <Link
-                    to={link === 'Home' ? '/' : `/${link.toLowerCase().replace(' ', '-')}`}
-                    className="text-muted-foreground text-sm hover:text-accent transition-colors"
-                  >
-                    {link}
-                  </Link>
-                </li>
-              ))}
+              <li>
+                <Link to="/" className="text-muted-foreground text-sm hover:text-accent transition-colors">
+                  Home
+                </Link>
+              </li>
+              <li>
+                <Link to="/kundali" className="text-muted-foreground text-sm hover:text-accent transition-colors">
+                  Generate Kundali
+                </Link>
+              </li>
+              <li>
+                <Link to="/astrologers" className="text-muted-foreground text-sm hover:text-accent transition-colors">
+                  Our Astrologers
+                </Link>
+              </li>
+              <li>
+                <Link to="/contact" className="text-muted-foreground text-sm hover:text-accent transition-colors">
+                  Book Consultation
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -42,11 +52,12 @@ export const Footer = () => {
           <div>
             <h4 className="font-serif text-lg font-semibold mb-4 text-foreground">Services</h4>
             <ul className="space-y-2">
-              {['Kundali Generation', 'Horoscope Reading', 'Match Making', 'Career Guidance', 'Marriage Prediction'].map((service) => (
-                <li key={service}>
-                  <span className="text-muted-foreground text-sm">{service}</span>
-                </li>
-              ))}
+              <li><Link to="/kundali" className="text-muted-foreground text-sm hover:text-accent">Kundali Generation</Link></li>
+              <li><Link to="/horoscope" className="text-muted-foreground text-sm hover:text-accent">Horoscope Reading</Link></li>
+              <li><Link to="/match-making" className="text-muted-foreground text-sm hover:text-accent">Match Making</Link></li>
+              <li><Link to="/numerology" className="text-muted-foreground text-sm hover:text-accent">Numerology</Link></li>
+              <li><Link to="/love-compatibility" className="text-muted-foreground text-sm hover:text-accent">Love Compatibility</Link></li>
+              <li><Link to="/tarot" className="text-muted-foreground text-sm hover:text-accent">Tarot Reading</Link></li>
             </ul>
           </div>
 
@@ -76,11 +87,11 @@ export const Footer = () => {
             © 2024 Aestro Maharaj. All rights reserved.
           </p>
           <div className="flex gap-6">
-            <Link to="/privacy" className="text-muted-foreground text-sm hover:text-accent transition-colors">
+            <Link to="/privacy-policy" className="text-muted-foreground text-sm hover:text-accent transition-colors">
               Privacy Policy
             </Link>
-            <Link to="/terms" className="text-muted-foreground text-sm hover:text-accent transition-colors">
-              Terms of Service
+            <Link to="/terms-of-use" className="text-muted-foreground text-sm hover:text-accent transition-colors">
+              Terms of Use
             </Link>
           </div>
         </div>

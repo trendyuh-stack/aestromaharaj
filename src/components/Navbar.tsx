@@ -13,6 +13,7 @@ const navLinks = [
   { href: '/match-making', label: 'Match Making' },
   { href: '/numerology', label: 'Numerology' },
   { href: '/tarot', label: 'Tarot' },
+  { href: '/love-compatibility', label: 'Love Compatibility' },
   { href: '/astrologers', label: 'Astrologers' },
 ];
 
@@ -41,11 +42,10 @@ export const Navbar = () => {
               <Link
                 key={link.href}
                 to={link.href}
-                className={`text-sm font-medium transition-colors hover:text-accent ${
-                  location.pathname === link.href
+                className={`text-sm font-medium transition-colors hover:text-accent ${location.pathname === link.href
                     ? 'text-accent'
                     : 'text-muted-foreground'
-                }`}
+                  }`}
               >
                 {link.label}
               </Link>
@@ -97,11 +97,10 @@ export const Navbar = () => {
                 <Link
                   key={link.href}
                   to={link.href}
-                  className={`px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                    location.pathname === link.href
+                  className={`px-4 py-3 rounded-lg text-sm font-medium transition-colors ${location.pathname === link.href
                       ? 'bg-accent/10 text-accent'
                       : 'text-muted-foreground hover:bg-muted/20'
-                  }`}
+                    }`}
                   onClick={() => setIsMenuOpen(false)}
                 >
                   {link.label}
